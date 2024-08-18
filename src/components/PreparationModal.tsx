@@ -53,7 +53,8 @@ const PreparationModal: React.FC<PreparationModalProps> = ({
       open={open}
       onClose={() => {}}
       PaperProps={{
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
+          event.stopPropagation(),
       }}
     >
       <DialogContent className="flex flex-col items-center">
