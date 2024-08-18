@@ -15,19 +15,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder }) => {
   };
 
   return (
-    <Card className="p-4">
+    <Card className="p-3">
       <img
         src={product.thumbnail}
         alt={product.name}
         className="h-48 w-full object-cover mb-2"
         onError={handleImageError}
       />
-      <h2 className="text-xl font-bold mb-2">{product.name}</h2>
-      <p>Preparation Time: {product.preparation_time} seconds</p>
+      <h2 className="text-[16px] font-bold mb-1">{product.name}</h2>
+      <p className="mb-2 text-[12px]">
+        Preparation Time: {product.preparation_time} seconds
+      </p>
       <Button
         variant="contained"
         color="primary"
-        className="mt-4"
+        sx={{ fontSize: "12px", textTransform: "none" }}
         onClick={() => onOrder(product.id)}
       >
         Order

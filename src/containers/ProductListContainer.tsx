@@ -1,36 +1,42 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../redux/store";
+import {
+  fetchProductsSuccess,
+  markProductAsDispatched,
+} from "../redux/productsSlice";
 import { fetchProducts } from "../services/productService";
-import { Product } from "../interfaces/Product";
 import ProductCard from "../components/ProductCard";
 import ProductSkeleton from "../components/ProductSkeleton";
 import ErrorMessage from "../components/ErrorMessage";
 import PreparationModal from "../components/PreparationModal";
-import { Button } from "@mui/material";
+import { Button, Container } from "@mui/material";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ProductList: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const dispatch = useDispatch();
+  const { products, loading, error } = useSelector(
+    (state: RootState) => state.products
+  );
+
   const [visibleProducts, setVisibleProducts] = useState<number>(8);
-  const [loading, setLoading] = useState<boolean>(true);
   const [loadMoreLoading, setLoadMoreLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [preparingOrder, setPreparingOrder] = useState<{
-    productId: string;
-    preparationTime: number;
-  } | null>(null);
+  const [preparingOrders, setPreparingOrders] = useState<{
+    [key: string]: number;
+  }>({});
 
   useEffect(() => {
     const getProducts = async () => {
       try {
         const products = await fetchProducts();
-        setProducts(products);
+        dispatch(fetchProductsSuccess(products));
       } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error("Failed to fetch products", err.message);
       }
     };
     getProducts();
-  }, []);
+  }, [dispatch]);
 
   const loadMoreProducts = async () => {
     setLoadMoreLoading(true);
@@ -44,52 +50,72 @@ const ProductList: React.FC = () => {
   const handleOrder = async (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (product) {
-      setPreparingOrder({
-        productId,
-        preparationTime: product.preparation_time,
-      });
+      setPreparingOrders((prev) => ({
+        ...prev,
+        [productId]: product.preparation_time,
+      }));
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, product.preparation_time * 1000)
-      );
+      const interval = setInterval(() => {
+        setPreparingOrders((prev) => {
+          const newTime = prev[productId] - 1;
+          if (newTime <= 0) {
+            clearInterval(interval);
+            dispatch(markProductAsDispatched(productId));
+            toast.success(`Product ${product.name} has been dispatched!`);
+            const { [productId]: _, ...remaining } = prev;
+            return remaining;
+          }
+          return { ...prev, [productId]: newTime };
+        });
+      }, 1000);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+        {Array.from(new Array(8)).map((_, index) => (
+          <ProductSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
 
   if (error) return <ErrorMessage message={error} />;
 
   return (
     <div>
-      <PreparationModal
-        open={!!preparingOrder}
-        preparationTime={preparingOrder?.preparationTime ?? 0}
-        onClose={() => setPreparingOrder(null)}
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-        {loading
-          ? Array.from(new Array(8)).map((_, index) => (
-              <ProductSkeleton key={index} />
-            ))
-          : products
-              .slice(0, visibleProducts)
-              .map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onOrder={() => handleOrder(product.id)}
-                />
-              ))}
-
-        {loadMoreLoading &&
-          Array.from(new Array(4)).map((_, index) => (
-            <ProductSkeleton key={index} />
+      {Object.keys(preparingOrders).map((productId) => (
+        <PreparationModal
+          key={productId}
+          open={true}
+          preparationTime={preparingOrders[productId]}
+          onClose={() => {}}
+        />
+      ))}
+      <Container>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          {products.slice(0, visibleProducts).map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onOrder={() => handleOrder(product.id)}
+            />
           ))}
-      </div>
+
+          {loadMoreLoading &&
+            Array.from(new Array(4)).map((_, index) => (
+              <ProductSkeleton key={index} />
+            ))}
+        </div>
+      </Container>
 
       {!loading && !loadMoreLoading && visibleProducts < products.length && (
         <div className="flex justify-center mt-4">
           <Button
             variant="contained"
             color="primary"
+            sx={{ fontSize: "12px", textTransform: "none" }}
             onClick={loadMoreProducts}
           >
             Load More
