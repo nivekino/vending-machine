@@ -1,19 +1,26 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
-import { Container, Typography, Grid } from "@mui/material";
+import { Container, Typography, Grid, Grow } from "@mui/material";
 import {
   updateProductPreparation,
   markProductAsDispatched,
 } from "../redux/productsSlice";
 import { toast } from "react-toastify";
 import OrderCardProduct from "../components/OrderCardProduct";
+import defaultImage from "../assets/images/defaultImage.png";
 
 const PreparingOrdersContainer: React.FC = () => {
   const dispatch = useDispatch();
   const preparingOrders = useSelector(
     (state: RootState) => state.products.preparingOrders
   );
+
+  const handleImageError = (
+    event: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    event.currentTarget.src = defaultImage;
+  };
 
   useEffect(() => {
     const activeIntervals: { [key: string]: NodeJS.Timeout } = {};
@@ -56,14 +63,18 @@ const PreparingOrdersContainer: React.FC = () => {
       </Typography>
       {preparingOrders.length > 0 ? (
         <Grid container spacing={4}>
-          {preparingOrders.map((order) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={order.id}>
-              <OrderCardProduct
-                productName={order.product.name}
-                preparationTime={order.product.preparation_time}
-                timeLeft={order.timeLeft}
-              />
-            </Grid>
+          {preparingOrders.map((order, index) => (
+            <Grow in timeout={500 * (index + 1)} key={order.id}>
+              <Grid item xs={12} sm={6} md={4} lg={3}>
+                <OrderCardProduct
+                  productName={order.product.name}
+                  preparationTime={order.product.preparation_time}
+                  timeLeft={order.timeLeft}
+                  imageSrc={order.product.thumbnail}
+                  onError={handleImageError}
+                />
+              </Grid>
+            </Grow>
           ))}
         </Grid>
       ) : (

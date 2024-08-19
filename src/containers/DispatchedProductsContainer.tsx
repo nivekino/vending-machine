@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
-import { Grid, Container, Typography } from "@mui/material";
+import { Grid, Container, Typography, Grow } from "@mui/material";
 import DispatchedCardProduct from "../components/DispatchedCardProduct";
 import defaultImage from "../assets/images/defaultImage.png";
 
@@ -26,14 +26,16 @@ const DispatchedProductsContainer: React.FC = () => {
         </Typography>
       ) : (
         <Grid container spacing={4}>
-          {dispatchedProducts.map((product) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-              <DispatchedCardProduct
-                thumbnail={product.thumbnail}
-                name={product.name}
-                onError={handleImageError}
-              />
-            </Grid>
+          {dispatchedProducts.map((product, index) => (
+            <Grow in timeout={500 * (index + 1)} key={product.id}>
+              <Grid item xs={12} sm={6} md={4} lg={3}>
+                <DispatchedCardProduct
+                  thumbnail={product.thumbnail}
+                  name={product.name}
+                  onError={handleImageError}
+                />
+              </Grid>
+            </Grow>
           ))}
         </Grid>
       )}

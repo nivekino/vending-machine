@@ -11,7 +11,7 @@ import { fetchProducts } from "../services/productService";
 import ProductCard from "../components/ProductCard";
 import ProductSkeleton from "../components/ProductSkeleton";
 import ErrorMessage from "../components/ErrorMessage";
-import { Button, Container } from "@mui/material";
+import { Button, Container, Grow } from "@mui/material";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { v4 as uuidv4 } from "uuid";
@@ -87,12 +87,16 @@ const ProductList: React.FC = () => {
     <div>
       <Container>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-          {products.slice(0, visibleProducts).map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onOrder={() => handleOrder(product.id)}
-            />
+          {products.slice(0, visibleProducts).map((product, index) => (
+            <Grow in key={product.id} timeout={300 * (index + 1)}>
+              <div>
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onOrder={() => handleOrder(product.id)}
+                />
+              </div>
+            </Grow>
           ))}
 
           {loadMoreLoading &&
