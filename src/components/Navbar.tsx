@@ -51,6 +51,9 @@ const Navbar: React.FC = () => {
             <Button color="inherit" component={RouterLink} to="/">
               Products
             </Button>
+            <Button color="inherit" component={RouterLink} to="/preparing">
+              Preparing Orders
+            </Button>
             <Button color="inherit" component={RouterLink} to="/dispatched">
               Dispatched Products
             </Button>
@@ -87,6 +90,9 @@ const Navbar: React.FC = () => {
           <List>
             <ListItem component={RouterLink} to="/">
               <ListItemText primary="Products" />
+            </ListItem>
+            <ListItem component={RouterLink} to="/preparing">
+              <ListItemText primary="Preparing Orders" />
             </ListItem>
             <ListItem component={RouterLink} to="/dispatched">
               <ListItemText primary="Dispatched Products" />

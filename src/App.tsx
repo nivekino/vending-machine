@@ -3,6 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Home from "./pages/Home";
 import DispatchedProducts from "./pages/DispatchedProducts";
+import PreparingOrders from "./pages/PreparingOrders";
 import Navbar from "./components/Navbar";
 
 const App: React.FC = () => {
@@ -14,6 +15,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/dispatched" element={<DispatchedProducts />} />
+            <Route path="/preparing" element={<PreparingOrders />} />
           </Routes>
         </main>
         <ToastContainer />

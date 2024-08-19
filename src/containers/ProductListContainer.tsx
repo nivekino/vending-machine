@@ -2,41 +2,84 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import {
+  fetchProductsStart,
   fetchProductsSuccess,
+  fetchProductsFailure,
+  startProductPreparation,
+  updateProductPreparation,
   markProductAsDispatched,
 } from "../redux/productsSlice";
 import { fetchProducts } from "../services/productService";
 import ProductCard from "../components/ProductCard";
 import ProductSkeleton from "../components/ProductSkeleton";
 import ErrorMessage from "../components/ErrorMessage";
-import PreparationModal from "../components/PreparationModal";
 import { Button, Container } from "@mui/material";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { v4 as uuidv4 } from "uuid";
 
 const ProductList: React.FC = () => {
   const dispatch = useDispatch();
-  const { products, loading, error } = useSelector(
+  const { products, loading, error, preparingOrders } = useSelector(
     (state: RootState) => state.products
   );
 
   const [visibleProducts, setVisibleProducts] = useState<number>(8);
   const [loadMoreLoading, setLoadMoreLoading] = useState<boolean>(false);
-  const [preparingOrders, setPreparingOrders] = useState<{
-    [key: string]: number;
-  }>({});
 
   useEffect(() => {
     const getProducts = async () => {
+      dispatch(fetchProductsStart());
       try {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         const products = await fetchProducts();
         dispatch(fetchProductsSuccess(products));
-      } catch (err: any) {
-        console.error("Failed to fetch products", err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          dispatch(fetchProductsFailure(err.message));
+        } else {
+          dispatch(fetchProductsFailure("An unexpected error occurred"));
+        }
       }
     };
     getProducts();
   }, [dispatch]);
+
+  useEffect(() => {
+    const activeIntervals: { [key: string]: NodeJS.Timeout } = {};
+
+    preparingOrders.forEach((order) => {
+      if (!activeIntervals[order.id]) {
+        activeIntervals[order.id] = setInterval(() => {
+          const newTimeLeft = order.timeLeft - 1;
+
+          if (newTimeLeft >= 0) {
+            dispatch(
+              updateProductPreparation({
+                id: order.id,
+                timeLeft: newTimeLeft,
+              })
+            );
+          }
+
+          if (newTimeLeft === 0) {
+            clearInterval(activeIntervals[order.id]);
+            dispatch(markProductAsDispatched(order.id));
+            toast.success(
+              `Product ${order.product.name} has been dispatched!`,
+              {
+                position: "bottom-right",
+              }
+            );
+          }
+        }, 1000);
+      }
+    });
+
+    return () => {
+      Object.values(activeIntervals).forEach(clearInterval);
+    };
+  }, [dispatch, preparingOrders]);
 
   const loadMoreProducts = async () => {
     setLoadMoreLoading(true);
@@ -47,37 +90,32 @@ const ProductList: React.FC = () => {
     setLoadMoreLoading(false);
   };
 
-  const handleOrder = async (productId: string) => {
+  const handleOrder = (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (product) {
-      setPreparingOrders((prev) => ({
-        ...prev,
-        [productId]: product.preparation_time,
-      }));
-
-      const interval = setInterval(() => {
-        setPreparingOrders((prev) => {
-          const newTime = prev[productId] - 1;
-          if (newTime <= 0) {
-            clearInterval(interval);
-            dispatch(markProductAsDispatched(productId));
-            toast.success(`Product ${product.name} has been dispatched!`);
-            const { [productId]: _, ...remaining } = prev;
-            return remaining;
-          }
-          return { ...prev, [productId]: newTime };
-        });
-      }, 1000);
+      const orderId = uuidv4();
+      toast.info(`Preparing order for ${product.name}!`, {
+        position: "bottom-right",
+      });
+      dispatch(
+        startProductPreparation({
+          id: orderId,
+          product,
+          timeLeft: product.preparation_time,
+        })
+      );
     }
   };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-        {Array.from(new Array(8)).map((_, index) => (
-          <ProductSkeleton key={index} />
-        ))}
-      </div>
+      <Container>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          {Array.from(new Array(8)).map((_, index) => (
+            <ProductSkeleton key={index} />
+          ))}
+        </div>
+      </Container>
     );
   }
 
@@ -85,14 +123,6 @@ const ProductList: React.FC = () => {
 
   return (
     <div>
-      {Object.keys(preparingOrders).map((productId) => (
-        <PreparationModal
-          key={productId}
-          open={true}
-          preparationTime={preparingOrders[productId]}
-          onClose={() => {}}
-        />
-      ))}
       <Container>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
           {products.slice(0, visibleProducts).map((product) => (
@@ -108,20 +138,20 @@ const ProductList: React.FC = () => {
               <ProductSkeleton key={index} />
             ))}
         </div>
-      </Container>
 
-      {!loading && !loadMoreLoading && visibleProducts < products.length && (
-        <div className="flex justify-center mt-4">
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ fontSize: "12px", textTransform: "none" }}
-            onClick={loadMoreProducts}
-          >
-            Load More
-          </Button>
-        </div>
-      )}
+        {!loading && !loadMoreLoading && visibleProducts < products.length && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ fontSize: "12px", textTransform: "none" }}
+              onClick={loadMoreProducts}
+            >
+              Load More
+            </Button>
+          </div>
+        )}
+      </Container>
     </div>
   );
 };

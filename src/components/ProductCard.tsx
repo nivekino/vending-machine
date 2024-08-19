@@ -1,4 +1,5 @@
-import { Card, Button } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Card, Button, CircularProgress } from "@mui/material";
 import { Product } from "../interfaces/Product";
 import defaultImage from "../assets/images/defaultImage.png";
 
@@ -8,11 +9,32 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder }) => {
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
   const handleImageError = (
     event: React.SyntheticEvent<HTMLImageElement, Event>
   ) => {
     event.currentTarget.src = defaultImage;
   };
+
+  const handleOrderClick = () => {
+    setIsOrdering(true);
+    setCountdown(5);
+    onOrder(product.id);
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
+      setIsOrdering(false);
+    }
+
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   return (
     <Card className="p-3">
@@ -30,9 +52,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder }) => {
         variant="contained"
         color="primary"
         sx={{ fontSize: "12px", textTransform: "none" }}
-        onClick={() => onOrder(product.id)}
+        onClick={handleOrderClick}
+        disabled={isOrdering}
       >
-        Order
+        {isOrdering ? <CircularProgress size={20} /> : "Order"}
       </Button>
     </Card>
   );
