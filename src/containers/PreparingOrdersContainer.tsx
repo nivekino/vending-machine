@@ -1,21 +1,15 @@
+import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
-import {
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  LinearProgress,
-} from "@mui/material";
-import { useEffect } from "react";
+import { Container, Typography, Grid } from "@mui/material";
 import {
   updateProductPreparation,
   markProductAsDispatched,
 } from "../redux/productsSlice";
 import { toast } from "react-toastify";
+import OrderCardProduct from "../components/OrderCardProduct";
 
-const PreparingOrders: React.FC = () => {
+const PreparingOrdersContainer: React.FC = () => {
   const dispatch = useDispatch();
   const preparingOrders = useSelector(
     (state: RootState) => state.products.preparingOrders
@@ -39,7 +33,12 @@ const PreparingOrders: React.FC = () => {
           if (currentTimeLeft <= 0) {
             clearInterval(activeIntervals[order.id]);
             dispatch(markProductAsDispatched(order.id));
-            toast.success(`Product ${order.product.name} has been dispatched!`);
+            toast.success(
+              `Product ${order.product.name} has been dispatched!`,
+              {
+                position: "bottom-right",
+              }
+            );
           }
         }, 1000);
       }
@@ -59,23 +58,11 @@ const PreparingOrders: React.FC = () => {
         <Grid container spacing={4}>
           {preparingOrders.map((order) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={order.id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">{order.product.name}</Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={
-                      ((order.product.preparation_time -
-                        Math.max(order.timeLeft, 0)) /
-                        order.product.preparation_time) *
-                      100
-                    }
-                  />
-                  <Typography variant="body2" color="textSecondary">
-                    {Math.max(order.timeLeft, 0)} seconds remaining
-                  </Typography>
-                </CardContent>
-              </Card>
+              <OrderCardProduct
+                productName={order.product.name}
+                preparationTime={order.product.preparation_time}
+                timeLeft={order.timeLeft}
+              />
             </Grid>
           ))}
         </Grid>
@@ -88,4 +75,4 @@ const PreparingOrders: React.FC = () => {
   );
 };
 
-export default PreparingOrders;
+export default PreparingOrdersContainer;

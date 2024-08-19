@@ -3,4 +3,5 @@ export interface Product {
   name: string;
   preparation_time: number;
   thumbnail: string;
+  [key: string]: string | number | boolean;
 }

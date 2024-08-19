@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AppThunk } from "./store";
 import { Product } from "../interfaces/Product";
+import { toast } from "react-toastify";
 
 interface PreparingOrder {
   id: string;
@@ -52,7 +54,6 @@ const productSlice = createSlice({
         order.timeLeft = action.payload.timeLeft;
       }
     },
-
     markProductAsDispatched(state, action: PayloadAction<string>) {
       const orderIndex = state.preparingOrders.findIndex(
         (order) => order.id === action.payload
@@ -73,5 +74,38 @@ export const {
   updateProductPreparation,
   markProductAsDispatched,
 } = productSlice.actions;
+
+export const startOrderCountdown =
+  (order: PreparingOrder): AppThunk =>
+  (dispatch, getState) => {
+    dispatch(startProductPreparation(order));
+
+    const intervalId = setInterval(() => {
+      const currentOrder = getState().products.preparingOrders.find(
+        (o) => o.id === order.id
+      );
+
+      if (!currentOrder) {
+        clearInterval(intervalId);
+        return;
+      }
+
+      if (currentOrder.timeLeft > 0) {
+        dispatch(
+          updateProductPreparation({
+            id: order.id,
+            timeLeft: currentOrder.timeLeft - 1,
+          })
+        );
+      } else {
+        clearInterval(intervalId);
+        dispatch(markProductAsDispatched(order.id));
+
+        toast.success(`Product ${order.product.name} has been dispatched!`, {
+          position: "bottom-right",
+        });
+      }
+    }, 1000);
+  };
 
 export default productSlice.reducer;

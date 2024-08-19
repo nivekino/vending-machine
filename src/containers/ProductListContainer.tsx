@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../redux/store";
+import { RootState, AppDispatch } from "../redux/store";
 import {
   fetchProductsStart,
   fetchProductsSuccess,
   fetchProductsFailure,
-  startProductPreparation,
-  updateProductPreparation,
-  markProductAsDispatched,
+  startOrderCountdown,
 } from "../redux/productsSlice";
 import { fetchProducts } from "../services/productService";
 import ProductCard from "../components/ProductCard";
@@ -19,8 +17,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { v4 as uuidv4 } from "uuid";
 
 const ProductList: React.FC = () => {
-  const dispatch = useDispatch();
-  const { products, loading, error, preparingOrders } = useSelector(
+  const dispatch: AppDispatch = useDispatch();
+  const { products, loading, error } = useSelector(
     (state: RootState) => state.products
   );
 
@@ -45,42 +43,6 @@ const ProductList: React.FC = () => {
     getProducts();
   }, [dispatch]);
 
-  useEffect(() => {
-    const activeIntervals: { [key: string]: NodeJS.Timeout } = {};
-
-    preparingOrders.forEach((order) => {
-      if (!activeIntervals[order.id]) {
-        activeIntervals[order.id] = setInterval(() => {
-          const newTimeLeft = order.timeLeft - 1;
-
-          if (newTimeLeft >= 0) {
-            dispatch(
-              updateProductPreparation({
-                id: order.id,
-                timeLeft: newTimeLeft,
-              })
-            );
-          }
-
-          if (newTimeLeft === 0) {
-            clearInterval(activeIntervals[order.id]);
-            dispatch(markProductAsDispatched(order.id));
-            toast.success(
-              `Product ${order.product.name} has been dispatched!`,
-              {
-                position: "bottom-right",
-              }
-            );
-          }
-        }, 1000);
-      }
-    });
-
-    return () => {
-      Object.values(activeIntervals).forEach(clearInterval);
-    };
-  }, [dispatch, preparingOrders]);
-
   const loadMoreProducts = async () => {
     setLoadMoreLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -98,7 +60,7 @@ const ProductList: React.FC = () => {
         position: "bottom-right",
       });
       dispatch(
-        startProductPreparation({
+        startOrderCountdown({
           id: orderId,
           product,
           timeLeft: product.preparation_time,
