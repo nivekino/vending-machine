@@ -23,7 +23,7 @@ const OrderCardProduct: React.FC<OrderCardProductProps> = ({
   onError,
 }) => {
   return (
-    <Card>
+    <Card sx={{ height: "100px" }}>
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <CardMedia
           component="img"
